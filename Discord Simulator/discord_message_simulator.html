@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Message Simulator</title>
+    <style>
+        body {
+            background-color: #36393f;
+            color: #dcddde;
+            font-family: 'Whitney', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            color: #fff;
+            font-size: 24px;
+        }
+
+        #fileInput {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+        }
+
+        #output {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background-color: #2f3136;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .message img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #72767d;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .username {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .timestamp {
+            color: #72767d;
+            font-size: 12px;
+        }
+
+        .content {
+            margin: 5px 0;
+            color: #dcddde;
+        }
+
+        a {
+            color: #00aff4;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Discord Message Simulator</h1>
+    <input type="file" id="fileInput" accept=".json">
+    <div id="output"></div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const output = document.getElementById('output');
+
+        // Avatar file paths
+        const avatarGreen = "./discordgreen.png";
+        const avatarRed = "./discordred.png";
+
+        // Map to assign avatars to users dynamically
+        const userAvatarMap = new Map();
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const jsonData = JSON.parse(e.target.result);
+                        displayMessages(jsonData);
+                    } catch (error) {
+                        output.innerHTML = `<p style="color: red;">Error loading JSON: ${error.message}</p>`;
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function displayMessages(data) {
+            output.innerHTML = ''; // Clear previous content
+            if (!Array.isArray(data)) {
+                output.innerHTML = `<p style="color: red;">Invalid JSON format. Expected an array.</p>`;
+                return;
+            }
+
+            // Sort messages by timestamp
+            data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            data.forEach((message) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+
+                // Assign avatar dynamically based on the user
+                if (!userAvatarMap.has(message.author.username)) {
+                    // Assign avatars based on the user
+                    const assignedAvatar = (message.author.username === 'heresjohnny1') ? avatarGreen : avatarRed;
+                    userAvatarMap.set(message.author.username, assignedAvatar);
+                }
+                const avatarUrl = userAvatarMap.get(message.author.username);
+
+                messageDiv.innerHTML = `
+                    <img src="${avatarUrl}" alt="Avatar">
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="username">${message.author.username}#${message.author.discriminator}</span>
+                            <span class="timestamp">${new Date(message.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div class="content">${message.content || '<em>No content</em>'}</div>
+                        ${message.attachments.length > 0 
+                            ? `<div><strong>Attachments:</strong> <a href="${message.attachments[0].url}" target="_blank">${message.attachments[0].filename}</a></div>` 
+                            : ''}
+                    </div>
+                `;
+                output.appendChild(messageDiv);
+            });
+        }
+    </script>
+</body>
+</html>
